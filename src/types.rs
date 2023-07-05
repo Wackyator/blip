@@ -163,8 +163,8 @@ impl FileService {
         let mut file = File::create(self.index.clone())?;
         for (hash, path) in index.hashtree().iter() {
             println!("writing: {hash}, {path}");
-            file.write_all(format!("{} {}", hash, path).as_bytes())?;
-            // writeln!(&mut file, "{} {}", hash, path);
+            // file.write_all(format!("{} {}", hash, path).as_bytes())?;
+            writeln!(&mut file, "{} {}", hash, path);
         }
         Ok(())
     }
