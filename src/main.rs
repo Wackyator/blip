@@ -1,23 +1,39 @@
 #![allow(unused)]
 
-use std::{
-    fs::{self, File},
-    io::{self, Write},
-    path::PathBuf,
-};
+mod types;
+
+use std::{env};
+
+use types::{Blob, FileService, Result};
 
 fn main() {
-    init_blip("/home/toaster/code/p/rust/blip");
+    FileService::init_blip("/home/toaster/code/p/rust/blip");
+    add_file(vec![".gitignore"]); 
 }
 
-fn init_blip(path: &str) -> Result<(), io::Error> {
-    let path: PathBuf = [path, ".blip"].iter().collect();
+fn add_file(files: Vec<&str>) -> Result<()> {
+    let file_service = FileService::new()?;
+    println!("{:?}", file_service);
+    let curr_dir = env::current_dir()?;
+    let mut index = file_service.read_index()?;
+    println!("{:?}", index);
 
-    fs::create_dir_all(path.join("objects"))?;
-    fs::create_dir_all(path.join("refs").join("heads"))?;
+    for file in files {
+        let full_path = curr_dir.join(file);
+        println!("{:?}", full_path);
+        let blob = Blob::new(&full_path)?;
+        println!("{:#?}", blob);
+        file_service.write_blob(&blob);
+        let relative_path = full_path
+            .strip_prefix(&file_service.root_dir)
+            .expect("Error: Invalid File")
+            .to_str()
+            .expect("Error: Invalid File");
+        println!("{:?}", relative_path);
+        index.update(&relative_path, &blob.hash());
+    }
 
-    let mut head = File::create(path.join("HEAD"))?;
-    head.write_all("ref: refs/heads/master".as_bytes());
-
+    println!("{:?}", index);
+    file_service.write_index(&index).expect("Failed to write to index");
     Ok(())
 }
